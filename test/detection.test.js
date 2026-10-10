@@ -138,6 +138,11 @@ test('messages, money and destructive account actions', () => {
   assert.equal(level('read_email', { id: 1 }), 'low');
 });
 
+test('network tools: a host that merely contains "toast" is not a drop-site', () => {
+  assert.equal(level('fetch_url', { url: 'https://toast.example.com/menu' }), 'low');
+  assert.equal(level('http_request', { url: 'https://abc.oast.fun/x', method: 'POST', body: 'x' }), 'high');
+});
+
 test('network tools: drop sites are high, ordinary GETs are low', () => {
   assert.equal(level('http_request', { url: 'https://webhook.site/abc', method: 'POST', body: 'x' }), 'high');
   assert.equal(level('fetch_url', { url: 'https://example.com/page' }), 'low');

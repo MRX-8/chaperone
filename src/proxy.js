@@ -69,7 +69,7 @@ export function createProxy({ cfg, store, budget, approvals, token }) {
     sendJson(res, status, (provider || openai).errorBody(message, code));
   };
 
-  const decider = (info, keepalive) => async (calls) => {
+  const decider = (info, keepalive, signal) => async (calls) => {
     for (const call of calls) {
       const a = assessToolCall(call, cfg);
       const d = decide(a, cfg);
@@ -81,7 +81,7 @@ export function createProxy({ cfg, store, budget, approvals, token }) {
         store.event('blocked', { tool: a.tool, level: a.level, reasons: a.reasons, summary: `Blocked ${a.tool}: ${a.reasons.join('; ')}` });
         return { allow: false, text: blockMessage(a, 'blocked this action by policy') };
       }
-      const wait = approvals.request({ tool: a.tool, level: a.level, reasons: a.reasons, summary: shown, provider: info.provider, model: info.model });
+      const wait = approvals.request({ tool: a.tool, level: a.level, reasons: a.reasons, summary: shown, provider: info.provider, model: info.model }, signal);
       const timer = keepalive ? setInterval(keepalive, 10_000) : null;
       const r = await wait;
       if (timer) clearInterval(timer);
@@ -192,7 +192,7 @@ export function createProxy({ cfg, store, budget, approvals, token }) {
     if (/event-stream/.test(ctype)) {
       res.writeHead(up.status, outHeaders);
       const keepalive = () => { if (!res.writableEnded) res.write(': chaperone is waiting for your approval\n\n'); };
-      const gate = provider.gated ? provider.createGate({ write: (s) => res.write(s), decide: decider(info, keepalive) }) : null;
+      const gate = provider.gated ? provider.createGate({ write: (s) => res.write(s), decide: decider(info, keepalive, ac.signal) }) : null;
       let usage = null;
       let chars = 0;
       const decoder = new TextDecoder();
@@ -230,7 +230,7 @@ export function createProxy({ cfg, store, budget, approvals, token }) {
     if (!out) { res.writeHead(up.status, { ...outHeaders, 'content-length': Buffer.byteLength(text) }); res.end(text); return; }
     const calls = provider.gated ? provider.calls(out) : [];
     if (calls.length) {
-      const verdict = await decider(info, null)(calls);
+      const verdict = await decider(info, null, ac.signal)(calls);
       if (!verdict.allow) out = provider.blockJson(out, verdict.text);
     } else if (!provider.gated) {
       store.event('note', { summary: 'Responses API: spend, loop and secret protection active; tool-call approval is not available for this API yet.' });

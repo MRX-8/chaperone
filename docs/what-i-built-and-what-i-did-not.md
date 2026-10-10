@@ -1,6 +1,6 @@
 # What is built, what is verified, what is still on you
 
-## Built and tested (57 automated tests, all passing)
+## Built and tested (64 automated tests, all passing)
 
 - Local proxy for OpenAI Chat Completions and Anthropic Messages, streaming and non-streaming
 - Secret detection and redaction (13 detection rules: cloud keys, tokens, private keys, JWTs, database passwords, password-style assignments)
@@ -16,6 +16,9 @@
 
 ## Verified by me by running it
 
+- The official OpenAI and Anthropic SDKs (streaming and non-streaming, tool calls, blocked and approved) through the proxy against a fake provider that dribbles bytes irregularly: 19 checks, run 9 times, all passing
+- 100 parallel requests, a 5 MB prompt, and an agent that disconnects while an approval is pending (this found and fixed a real bug)
+- The scanner against five real public repositories. The first version called four of them DANGER; after the fixes none are, and the malicious samples are still caught
 - The full test suite
 - `chaperone demo` end to end
 - A real `chaperone start` against a mock provider, with the dashboard in a browser: I approved one request and denied another and checked what each waiting client received

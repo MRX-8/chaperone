@@ -113,8 +113,8 @@ Please read this. Security tools that oversell get people hurt.
 - **It does not limit what an approved command does.** If you allow it, it runs with your permissions.
 - **Coverage.** Blocking and approval work for the Chat Completions and Anthropic Messages APIs, streaming and non-streaming. The OpenAI Responses API gets spend, loop and secret protection but **not** tool-call approval yet. **MCP traffic is not covered yet.** For streaming replies, a tool call is buffered until it completes so it can be judged. Only the first choice is gated when `n > 1`.
 - **Costs are estimates.** Caps are checked before each request, so one in-flight request can run past a cap.
-- **Tested against mock providers.** The suite replays the documented API formats (57 tests). It has not yet been verified against each agent. Expected to work, unverified: Claude Code (`ANTHROPIC_BASE_URL`), OpenAI SDKs and CLIs (`OPENAI_BASE_URL`), Aider, Open WebUI, custom scripts. Please report what breaks.
-- **A clean `scan` is not a guarantee.** It reads files for known bad patterns.
+- **Tested against mock providers.** The suite replays the documented API formats (64 tests), the official OpenAI and Anthropic SDKs have been run through it with streaming and tool calls (`scripts/sdk-compat.mjs`), and a parallel-load script is in `scripts/`. It has not yet been verified against real provider endpoints or each agent. Expected to work, unverified: Claude Code (`ANTHROPIC_BASE_URL`), OpenAI SDKs and CLIs (`OPENAI_BASE_URL`), Aider, Open WebUI, custom scripts. Please report what breaks.
+- **A clean `scan` is not a guarantee.** It reads files for known bad patterns. It was tuned against five well-known legitimate repositories (Anthropic's `skills`, MCP `servers`, `express`, `requests`, `execa`) and flags none of them as dangerous, but it has been tested against hand-written malicious samples, not real malware.
 
 ## Privacy and security design
 

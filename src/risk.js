@@ -121,7 +121,7 @@ const COMMS_NOUNS = ['email', 'mail', 'message', 'sms', 'dm', 'whatsapp', 'slack
 const MONEY_WORDS = ['transfer', 'payment', 'pay', 'purchase', 'buy', 'checkout', 'wire', 'withdraw', 'refund', 'charge', 'order', 'subscribe'];
 const DESTRUCTIVE_NOUNS = ['account', 'user', 'database', 'db', 'repo', 'repository', 'bucket', 'email', 'emails', 'inbox', 'mailbox', 'workspace', 'project', 'table', 'records', 'calendar', 'drive'];
 
-const EXFIL_HOSTS = /(?:webhook\.site|requestbin|pipedream\.net|pastebin\.com|paste\.ee|transfer\.sh|ngrok(?:-free)?\.(?:io|app|dev)|discord(?:app)?\.com\/api\/webhooks|api\.telegram\.org\/bot|hooks\.slack\.com|oast\.|interact\.sh|burpcollaborator)/i;
+const EXFIL_HOSTS = /(?:webhook\.site|requestbin|pipedream\.net|pastebin\.com|paste\.ee|transfer\.sh|ngrok(?:-free)?\.(?:io|app|dev)|discord(?:app)?\.com\/api\/webhooks|api\.telegram\.org\/bot|hooks\.slack\.com|(?<![a-z0-9])oast\.(?:fun|pro|live|site|online|me)\b|interact\.sh|burpcollaborator)/i;
 
 const pathValues = (args) => {
   const out = [];

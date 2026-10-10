@@ -11,13 +11,16 @@ export class Approvals extends EventEmitter {
     this.pending = new Map();
   }
 
-  request(info) {
+  request(info, signal) {
     const id = rid();
     const timeoutMs = Math.max(1, this.cfg.tools.approvalTimeoutSec) * 1000;
     return new Promise((resolve) => {
       const entry = { id, createdAt: Date.now(), expiresAt: Date.now() + timeoutMs, ...info };
       const timer = setTimeout(() => this.resolve(id, false, 'timeout'), timeoutMs);
-      entry.finish = (allow, by) => { clearTimeout(timer); resolve({ allow, by }); };
+      // If the agent hangs up while waiting, there is nothing left to approve.
+      const gone = () => this.resolve(id, false, 'client-left');
+      if (signal) { if (signal.aborted) queueMicrotask(gone); else signal.addEventListener('abort', gone, { once: true }); }
+      entry.finish = (allow, by) => { clearTimeout(timer); if (signal) signal.removeEventListener('abort', gone); resolve({ allow, by }); };
       this.pending.set(id, entry);
       this.store.bump('approvals');
       this.store.event('approval_requested', { approvalId: id, level: info.level, tool: info.tool, summary: `Waiting for your approval: ${info.tool} (${info.level} risk)`, command: info.summary, reasons: info.reasons });

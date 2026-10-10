@@ -183,7 +183,7 @@ async function scan(rest, flags) {
   let dir = resolve(target);
   let cleanup = () => {};
   if (/^https?:\/\//.test(target)) {
-    console.log(c.gray(`Downloading ${target} ...`));
+    console.error(c.gray(`Downloading ${target} ...`));
     try { const r = cloneRepo(target); dir = r.dir; cleanup = r.cleanup; } catch (e) { fail(e.message); }
   } else if (!existsSync(dir)) fail(`${target} does not exist.`);
   const report = scanPath(dir);

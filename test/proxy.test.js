@@ -321,3 +321,15 @@ test('the audit log records events without prompt text or keys', async () => {
     assert.match(log, /tool_call/);
   });
 });
+
+test('an approval is cancelled when the agent hangs up while waiting', async () => {
+  await withStack((req, res) => json(res, oaiCall('bash', { command: 'sudo reboot' })), {}, async (s) => {
+    const ac = new AbortController();
+    const p = fetch(`${s.base}/v1/chat/completions`, { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify(chat()) }).catch(() => 'aborted');
+    await until(() => s.approvals.list()[0]);
+    ac.abort();
+    await p;
+    await until(() => s.approvals.list().length === 0);
+    assert.ok(s.store.recent.some((e) => e.type === 'approval_resolved' && /client-left/.test(e.summary)));
+  });
+});
