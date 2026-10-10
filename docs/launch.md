@@ -6,7 +6,7 @@ The goal of the first two weeks is **evidence**, not hype: real people running C
 
 - [ ] **Run it with a real agent.** Do this yourself, then write the results into the README's compatibility note. Do not claim a tool works until you have seen it work. Try at least: Claude Code (`ANTHROPIC_BASE_URL`), an OpenAI SDK script (`OPENAI_BASE_URL`), and one open-source agent you can run locally. Note anything that breaks and fix it.
 - [ ] **Reserve the name.** `chaperone-ai` was free on npm when checked (Oct 2026). `chaperone` and several similar names are taken. Check the GitHub org and a domain too. The name is a placeholder: do a trademark search before you invest in the brand.
-- [ ] **Create the GitHub repo** and replace `YOUR-ORG` in `site/index.html`.
+- [ ] **Create the GitHub repo** and replace `MRX-8` in `site/index.html`.
 - [ ] **Publish to npm**: `npm login` then `npm publish --access public`. (Until you do, `npx chaperone-ai ...` will not work. I did not publish it for you.)
 - [ ] **Deploy `site/`** to any static host (Cloudflare Pages is free). Set `ENDPOINT` in the page script to a form service (Formspree, Buttondown, a Google Form) and `FALLBACK_EMAIL`.
 - [ ] **Record a 20-second screen capture** of `npx chaperone-ai demo` next to the dashboard. This is your most shareable asset.

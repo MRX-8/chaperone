@@ -3,14 +3,43 @@
   "version": "0.1.0",
   "description": "A local guard that sits between any AI agent and the internet: spend caps, secret-leak blocking, approval for dangerous actions, and a flight recorder. Zero dependencies.",
   "type": "module",
-  "bin": { "chaperone": "bin/chaperone.js" },
-  "files": ["bin", "src", "README.md", "LICENSE"],
+  "bin": {
+    "chaperone": "bin/chaperone.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node bin/chaperone.js start",
     "demo": "node bin/chaperone.js demo",
     "test": "node --test"
   },
-  "engines": { "node": ">=20" },
-  "keywords": ["ai", "agent", "security", "guardrails", "llm", "proxy", "openai", "anthropic", "mcp", "budget", "approval"],
-  "license": "MIT"
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "security",
+    "guardrails",
+    "llm",
+    "proxy",
+    "openai",
+    "anthropic",
+    "mcp",
+    "budget",
+    "approval"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MRX-8/chaperone.git"
+  },
+  "homepage": "https://github.com/MRX-8/chaperone#readme",
+  "bugs": {
+    "url": "https://github.com/MRX-8/chaperone/issues"
+  }
 }
