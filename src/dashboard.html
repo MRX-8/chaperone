@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chaperone</title>
+<style>
+  :root {
+    --ink: #0C0F12; --panel: #141920; --raise: #1A212A; --line: #242D38; --text: #E7EBEF; --muted: #8995A3;
+    --amber: #FFB224; --red: #FF5C5C; --green: #34D399; --blue: #5BA8FF; --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(12, 15, 18, 0.92); backdrop-filter: blur(6px); z-index: 5; }
+  .word { font: 800 18px/1 system-ui; letter-spacing: -0.02em; }
+  .word i { color: var(--amber); font-style: normal; }
+  .status { display: inline-flex; align-items: center; gap: 8px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); font: 600 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); animation: beat 2s infinite; }
+  .status.paused { color: var(--red); border-color: rgba(255, 92, 92, 0.5); }
+  .status.paused .dot { background: var(--red); animation: none; }
+  .status.offline .dot { background: var(--muted); animation: none; }
+  @keyframes beat { 70% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); } }
+  .spacer { flex: 1; }
+  .kill { background: var(--red); color: #1A0505; border: 0; border-radius: 6px; padding: 9px 16px; font-weight: 800; letter-spacing: 0.04em; }
+  .kill.resume { background: var(--green); color: #04201A; }
+  .kill:hover { filter: brightness(1.08); }
+  main { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; padding: 18px 22px 40px; max-width: 1280px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+  h2 { margin: 0 0 12px; font: 600 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .col { display: grid; gap: 18px; align-content: start; }
+  .meter { margin-bottom: 14px; }
+  .meter .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .meter b { font: 700 22px var(--mono); }
+  .meter span { color: var(--muted); font: 12px var(--mono); }
+  .bar { height: 8px; background: var(--raise); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--green); transition: width .4s, background .3s; }
+  .bar.warn i { background: var(--amber); }
+  .bar.full i { background: var(--red); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { background: var(--raise); border-radius: 6px; padding: 10px 12px; }
+  .stat b { display: block; font: 700 20px var(--mono); }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .policy { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .policy b { color: var(--text); font-weight: 600; }
+  form.budget { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 14px; }
+  form.budget input { width: 100%; background: var(--raise); border: 1px solid var(--line); color: var(--text); padding: 7px 9px; border-radius: 5px; font: 13px var(--mono); }
+  form.budget button { background: var(--raise); color: var(--text); border: 1px solid var(--line); border-radius: 5px; padding: 0 12px; }
+  .approval { border: 1px solid rgba(255, 178, 36, 0.55); background: rgba(255, 178, 36, 0.06); border-radius: 8px; padding: 14px; margin-bottom: 12px; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .approval .top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .lvl { font: 700 10px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 7px; border-radius: 3px; }
+  .lvl.high { background: var(--amber); color: #2A1B00; }
+  .lvl.critical { background: var(--red); color: #200; }
+  .lvl.medium { background: var(--blue); color: #021226; }
+  .lvl.low { background: var(--line); color: var(--text); }
+  .approval .tool { font-weight: 700; }
+  .approval .timer { margin-left: auto; font: 12px var(--mono); color: var(--muted); }
+  .approval ul { margin: 0 0 10px; padding-left: 18px; color: var(--muted); }
+  pre.raw { margin: 0 0 12px; padding: 10px 12px; background: #090B0D; border: 1px solid var(--line); border-radius: 6px; overflow: auto; max-height: 220px; font: 12.5px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }
+  .actions { display: flex; gap: 8px; }
+  .actions button { border-radius: 6px; padding: 8px 14px; font-weight: 700; border: 1px solid var(--line); background: var(--raise); color: var(--text); }
+  .actions .allow { background: var(--green); color: #04201A; border: 0; }
+  .actions .no { background: transparent; color: var(--red); border-color: rgba(255, 92, 92, 0.5); }
+  .empty { color: var(--muted); padding: 6px 0 2px; }
+  .empty code, .setup code { font: 12.5px var(--mono); background: var(--raise); padding: 2px 6px; border-radius: 4px; color: var(--text); }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { display: grid; grid-template-columns: 62px 18px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .feed li:last-child { border-bottom: 0; }
+  .feed time { color: var(--muted); font: 12px var(--mono); padding-top: 1px; }
+  .feed .mark { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--muted); }
+  .feed .t-call .mark { background: var(--blue); }
+  .feed .t-tool_call .mark { background: var(--muted); }
+  .feed .t-redacted .mark, .feed .t-budget_warn .mark, .feed .t-approval_requested .mark { background: var(--amber); }
+  .feed .t-blocked .mark, .feed .t-paused .mark, .feed .t-error .mark { background: var(--red); }
+  .feed .t-resumed .mark, .feed .t-approval_resolved .mark { background: var(--green); }
+  .feed .t-tool_call.ask .mark { background: var(--amber); }
+  .feed .msg { word-break: break-word; }
+  .feed .msg small { display: block; color: var(--muted); font: 12px var(--mono); margin-top: 2px; }
+  .setup { color: var(--muted); }
+  .setup p { margin: 6px 0; }
+  .toast { position: fixed; right: 18px; bottom: 18px; background: var(--raise); border: 1px solid var(--line); padding: 10px 14px; border-radius: 6px; max-width: 340px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <span class="word">Chaperone<i>.</i></span>
+  <span id="status" class="status offline"><span class="dot"></span><span id="statusText">connecting</span></span>
+  <span class="spacer"></span>
+  <button id="kill" class="kill" title="Stop every request from your agents immediately">KILL SWITCH</button>
+</header>
+
+<main>
+  <div class="col">
+    <section aria-label="Spending">
+      <h2>Spend</h2>
+      <div class="meter"><div class="row"><b id="dayUSD">$0.00</b><span id="dayCap">today</span></div><div class="bar" id="dayBar"><i></i></div></div>
+      <div class="meter"><div class="row"><b id="monthUSD">$0.00</b><span id="monthCap">this month</span></div><div class="bar" id="monthBar"><i></i></div></div>
+      <form class="budget" id="budgetForm" autocomplete="off">
+        <input id="inDay" inputmode="decimal" aria-label="Daily budget in dollars" placeholder="daily $">
+        <input id="inMonth" inputmode="decimal" aria-label="Monthly budget in dollars" placeholder="monthly $">
+        <button>Set</button>
+      </form>
+    </section>
+    <section aria-label="Totals">
+      <h2>Protected so far</h2>
+      <div class="stats">
+        <div class="stat"><b id="sReq">0</b><span>requests</span></div>
+        <div class="stat"><b id="sBlocked">0</b><span>actions stopped</span></div>
+        <div class="stat"><b id="sRedact">0</b><span>secrets removed</span></div>
+        <div class="stat"><b id="sAppr">0</b><span>approvals asked</span></div>
+      </div>
+    </section>
+    <section aria-label="Policy">
+      <h2>Rules</h2>
+      <div class="policy" id="policy"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section aria-label="Approvals">
+      <h2>Waiting for you</h2>
+      <div id="approvals"></div>
+    </section>
+    <section aria-label="Activity">
+      <h2>Flight recorder</h2>
+      <ul class="feed" id="feed"></ul>
+      <div class="setup" id="setup" hidden>
+        <p>Nothing has gone through Chaperone yet. Point an agent at it:</p>
+        <p><code>export OPENAI_BASE_URL=<span class="origin"></span>/v1</code></p>
+        <p><code>export ANTHROPIC_BASE_URL=<span class="origin"></span></code></p>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const hash = new URLSearchParams(location.hash.slice(1));
+  let token = hash.get('t');
+  try { if (token) localStorage.setItem('chaperone-token', token); else token = localStorage.getItem('chaperone-token'); } catch (e) {}
+  if (location.hash) history.replaceState(null, '', location.pathname);
+  document.querySelectorAll('.origin').forEach((n) => { n.textContent = location.origin; });
+
+  const api = (path, method = 'GET', body) => fetch('/_/api/' + path, { method, headers: { 'x-chaperone-token': token || '', 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+
+  let state = null;
+  let feed = [];
+  const money = (n) => (n > 0 && n < 0.01 ? '<$0.01' : '$' + n.toFixed(2));
+  const clock = (ts) => new Date(ts).toLocaleTimeString([], { hour12: false });
+  const toast = (m) => { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = 'none'; }, 3500); };
+
+  function meter(prefix, spent, cap, label) {
+    $(prefix + 'USD').textContent = money(spent);
+    $(prefix + 'Cap').textContent = cap > 0 ? label + ' of ' + money(cap) : label + ', no cap';
+    const pct = cap > 0 ? Math.min(100, (spent / cap) * 100) : 0;
+    const bar = $(prefix + 'Bar');
+    bar.firstElementChild.style.width = pct + '%';
+    bar.className = 'bar' + (pct >= 100 ? ' full' : pct >= 80 ? ' warn' : '');
+  }
+
+  function renderState() {
+    if (!state) return;
+    const st = $('status');
+    st.className = 'status' + (state.paused ? ' paused' : '');
+    $('statusText').textContent = state.paused ? 'paused' : 'watching';
+    const kill = $('kill');
+    kill.textContent = state.paused ? 'RESUME' : 'KILL SWITCH';
+    kill.className = 'kill' + (state.paused ? ' resume' : '');
+    meter('day', state.spend.dayUSD, state.spend.dailyCap, 'today');
+    meter('month', state.spend.monthUSD, state.spend.monthlyCap, 'this month');
+    $('sReq').textContent = state.totals.requests;
+    $('sBlocked').textContent = state.totals.blocked;
+    $('sRedact').textContent = state.totals.redactions;
+    $('sAppr').textContent = state.totals.approvals;
+    const p = state.policy;
+    $('policy').innerHTML = '';
+    const row = (a, b) => { const d = document.createElement('div'); d.innerHTML = a + ' <b></b>'; d.querySelector('b').textContent = b; $('policy').appendChild(d); };
+    row('Ask me first for', p.approve.length ? p.approve.join(', ') + ' risk' : 'nothing');
+    row('Block outright', p.block.length ? p.block.join(', ') + ' risk' : 'nothing');
+    row('Secrets in prompts', p.secrets);
+    row('Rate limit', p.rate + ' / minute');
+    row('Loop guard', 'pause after ' + p.loop + ' repeats');
+    row('No answer after', p.approvalTimeoutSec + 's means no');
+    document.title = (state.pending.length ? '(' + state.pending.length + ') Approval needed - ' : '') + 'Chaperone';
+    renderApprovals();
+  }
+
+  function renderApprovals() {
+    const host = $('approvals');
+    const list = state ? state.pending : [];
+    if (!list.length) { host.innerHTML = '<div class="empty">Nothing needs your decision. Risky actions will appear here, and nothing runs until you answer.</div>'; return; }
+    host.innerHTML = '';
+    for (const a of list) {
+      const el = document.createElement('div');
+      el.className = 'approval';
+      const left = Math.max(0, Math.round((a.expiresAt - Date.now()) / 1000));
+      el.innerHTML = '<div class="top"><span class="lvl"></span><span class="tool"></span><span class="timer"></span></div><ul></ul><pre class="raw"></pre><div class="actions"><button class="allow">Allow once</button><button class="no">Deny</button></div>';
+      el.querySelector('.lvl').className = 'lvl ' + a.level;
+      el.querySelector('.lvl').textContent = a.level;
+      el.querySelector('.tool').textContent = a.tool;
+      el.querySelector('.timer').textContent = left + 's left';
+      el.dataset.expires = a.expiresAt;
+      for (const r of a.reasons) { const li = document.createElement('li'); li.textContent = r; el.querySelector('ul').appendChild(li); }
+      el.querySelector('pre').textContent = a.summary;
+      el.querySelector('.allow').onclick = () => decide(a.id, 'allow');
+      el.querySelector('.no').onclick = () => decide(a.id, 'deny');
+      host.appendChild(el);
+    }
+  }
+
+  function decide(id, verdict) {
+    api('approvals/' + id + '/' + verdict, 'POST').then((s) => { state = s; renderState(); }).catch(() => toast('That one was already answered.'));
+  }
+
+  function renderFeed() {
+    const ul = $('feed');
+    ul.innerHTML = '';
+    $('setup').hidden = feed.length > 0;
+    for (const ev of feed.slice(-120).reverse()) {
+      const li = document.createElement('li');
+      li.className = 't-' + ev.type;
+      const t = document.createElement('time'); t.textContent = clock(ev.ts);
+      const m = document.createElement('span'); m.className = 'mark';
+      const box = document.createElement('div'); box.className = 'msg';
+      let head = ev.summary || ev.type;
+      if (ev.type === 'tool_call') head = (ev.decision === 'allow' ? 'Allowed ' : ev.decision === 'ask' ? 'Asked about ' : 'Blocked ') + ev.tool + ' (' + ev.level + ')';
+      box.textContent = head;
+      const sub = document.createElement('small');
+      if (ev.type === 'tool_call') sub.textContent = ev.summary;
+      else if (ev.command) sub.textContent = ev.command;
+      else if (ev.reasons && ev.reasons.length) sub.textContent = ev.reasons.join(' / ');
+      if (sub.textContent) box.appendChild(sub);
+      li.append(t, m, box);
+      ul.appendChild(li);
+    }
+  }
+
+  async function refresh() {
+    try { state = await api('state'); feed = state.recent; renderState(); renderFeed(); }
+    catch (e) { const st = $('status'); st.className = 'status offline'; $('statusText').textContent = token ? 'offline' : 'no token'; }
+  }
+
+  $('kill').onclick = () => api(state && state.paused ? 'resume' : 'pause', 'POST', { reason: 'Paused from the dashboard' }).then((s) => { state = s; renderState(); });
+  $('budgetForm').onsubmit = (e) => {
+    e.preventDefault();
+    const d = parseFloat($('inDay').value); const m = parseFloat($('inMonth').value);
+    const body = {};
+    if (Number.isFinite(d)) body.dailyUSD = d;
+    if (Number.isFinite(m)) body.monthlyUSD = m;
+    if (!Object.keys(body).length) return toast('Enter a daily and/or monthly amount in dollars.');
+    api('budget', 'POST', body).then((s) => { state = s; renderState(); toast('Budget updated until Chaperone restarts. Edit config.json to make it permanent.'); $('inDay').value = ''; $('inMonth').value = ''; });
+  };
+
+  function live() {
+    const es = new EventSource('/_/api/events?t=' + encodeURIComponent(token || ''));
+    es.onmessage = (m) => {
+      const ev = JSON.parse(m.data);
+      feed.push(ev);
+      renderFeed();
+      refresh();
+    };
+    es.onerror = () => { es.close(); setTimeout(live, 2500); };
+  }
+
+  setInterval(() => {
+    document.querySelectorAll('.approval').forEach((el) => {
+      const left = Math.max(0, Math.round((Number(el.dataset.expires) - Date.now()) / 1000));
+      el.querySelector('.timer').textContent = left + 's left';
+    });
+  }, 1000);
+  setInterval(refresh, 4000);
+  refresh();
+  live();
+})();
+</script>
+</body>
+</html>
